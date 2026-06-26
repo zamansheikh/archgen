@@ -6,7 +6,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'commands/create_command.dart';
 import 'utils/banner.dart';
 
-const String _version = '0.2.0';
+const String _version = '0.1.0';
 
 /// Top-level runner for the `arch_gen` executable.
 class ArchGenCommandRunner extends CommandRunner<int> {

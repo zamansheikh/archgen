@@ -1,4 +1,5 @@
 import '../generators/architecture.dart';
+import '../generators/state_management.dart';
 
 /// All the user choices collected for a new project.
 class ProjectConfig {
@@ -7,6 +8,7 @@ class ProjectConfig {
     required this.org,
     required this.architecture,
     required this.feature,
+    required this.stateManagement,
     required this.enableL10n,
     required this.enableTheme,
   });
@@ -15,6 +17,7 @@ class ProjectConfig {
   final String org;
   final Architecture architecture;
   final String feature;
+  final StateManagement stateManagement;
   final bool enableL10n;
   final bool enableTheme;
 

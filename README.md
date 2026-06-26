@@ -65,6 +65,7 @@ arch_gen create my_app --arch clean --no-flutter-create
 | Flag | Description |
 |------|-------------|
 | `-a, --arch` | `clean` or `mvc`. Omit to choose interactively. |
+| `-s, --state` | `none`, `provider`, `riverpod`, `bloc`, or `getx`. Omit to choose interactively. |
 | `-f, --feature` | First feature name (Clean Architecture only). Default `home`. |
 | `--org` | Organization (reverse-domain), e.g. `com.example`. |
 | `--[no-]theme` | Add a light/dark theme setup. Omit to be asked. |
@@ -74,8 +75,17 @@ arch_gen create my_app --arch clean --no-flutter-create
 
 Any flag you omit is asked interactively (with a sensible default), so a bare
 `arch_gen` walks you through everything: project name → organization →
-architecture → feature → theme → localization. The resolved full package id
-(e.g. `com.example.my_app`) is shown as you go.
+architecture → feature → state management → theme → localization. The resolved
+full package id (e.g. `com.example.my_app`) is shown as you go.
+
+### State management
+
+Pick one of **None / Provider / Riverpod / Bloc / GetX**. arch_gen adds the
+matching dependency, runs `flutter pub get`, and scaffolds a small working
+counter example wired with that library in the correct layer (Clean
+Architecture: `presentation/bloc` · `presentation/providers` ·
+`presentation/controllers`; MVC: `controllers/`). `main.dart` is wired too
+(e.g. `ProviderScope` for Riverpod, `GetMaterialApp` for GetX).
 
 When localization is enabled, arch_gen also adds `flutter_localizations` + `intl`
 to `pubspec.yaml`, sets `flutter: generate: true`, creates `l10n.yaml` and ARB

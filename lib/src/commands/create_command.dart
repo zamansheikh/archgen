@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '../generators/architecture.dart';
 import '../generators/clean_architecture_generator.dart';
 import '../generators/mvc_generator.dart';
+import '../generators/state_management.dart';
 import '../models/project_config.dart';
 import '../utils/flutter_cli.dart';
 import '../utils/pubspec_patcher.dart';
@@ -31,6 +32,19 @@ class CreateCommand extends Command<int> {
         'feature',
         abbr: 'f',
         help: 'Name of the first feature (Clean Architecture only).',
+      )
+      ..addOption(
+        'state',
+        abbr: 's',
+        help: 'State management to wire up.',
+        allowed: ['none', 'provider', 'riverpod', 'bloc', 'getx'],
+        allowedHelp: {
+          'none': 'Plain setState, no extra dependency.',
+          'provider': 'ChangeNotifier + provider.',
+          'riverpod': 'flutter_riverpod.',
+          'bloc': 'flutter_bloc (events + states).',
+          'getx': 'GetX reactive controllers.',
+        },
       )
       ..addOption('org', help: 'Organization, e.g. com.example.')
       ..addFlag('l10n', help: 'Enable localization (l10n).')
@@ -129,7 +143,24 @@ class CreateCommand extends Command<int> {
     }
     feature = feature.trim().isEmpty ? 'home' : feature.trim();
 
-    // 5. Feature toggles: theming + localization.
+    // 5. State management (arrow-key picker, Riverpod recommended).
+    final StateManagement stateManagement;
+    final stateFlag = argResults.option('state');
+    if (stateFlag != null) {
+      stateManagement = StateManagement.fromId(stateFlag)!;
+    } else if (_interactive) {
+      stateManagement = _logger.chooseOne<StateManagement>(
+        '${lightCyan.wrap('?')} Choose state management '
+        '${darkGray.wrap('(↑/↓ to move, enter to select)')}',
+        choices: StateManagement.values,
+        defaultValue: StateManagement.riverpod,
+        display: (s) => s.menuLabel,
+      );
+    } else {
+      stateManagement = StateManagement.none;
+    }
+
+    // 6. Feature toggles: theming + localization.
     final enableTheme = _resolveToggle(
       argResults,
       'theme',
@@ -148,6 +179,7 @@ class CreateCommand extends Command<int> {
       org: org,
       architecture: architecture,
       feature: feature,
+      stateManagement: stateManagement,
       enableL10n: enableL10n,
       enableTheme: enableTheme,
     );
@@ -189,23 +221,39 @@ class CreateCommand extends Command<int> {
     final created = Scaffold(targetDir.path).apply(plan, overwrite: true);
     progress.complete('Scaffolded ${created.length} paths');
 
-    // 8. Enable localization deps + regenerate (only with a real project).
-    if (enableL10n && !skipFlutterCreate) {
-      final patched = PubspecPatcher.enableL10n(targetDir.path);
-      if (patched) {
-        final l10nProgress = _logger.progress(
-          'Wiring localization (flutter pub get + codegen)',
+    // 8. Patch pubspec (state-management dep + l10n) and run pub get / codegen
+    //    (only meaningful with a real Flutter project).
+    var pubGetRan = false;
+    if (!skipFlutterCreate) {
+      var needsPubGet = false;
+
+      final sm = stateManagement;
+      if (sm.packageName != null) {
+        needsPubGet |= PubspecPatcher.addDependency(
+          targetDir.path,
+          sm.packageName!,
+          sm.versionConstraint!,
+        );
+      }
+      if (enableL10n) {
+        needsPubGet |= PubspecPatcher.enableL10n(targetDir.path);
+      }
+
+      if (needsPubGet) {
+        final depProgress = _logger.progress(
+          'Installing dependencies (flutter pub get)',
         );
         final code = await FlutterCli.pubGet(targetDir.path);
+        pubGetRan = code == 0;
         if (code == 0) {
-          l10nProgress.complete('Localization ready');
+          depProgress.complete('Dependencies ready');
         } else {
-          l10nProgress.fail('`flutter pub get` failed — run it manually');
+          depProgress.fail('`flutter pub get` failed — run it manually');
         }
       }
     }
 
-    _printNextSteps(config, skipPubGet: enableL10n && !skipFlutterCreate);
+    _printNextSteps(config, skipPubGet: pubGetRan);
     return ExitCode.success.code;
   }
 
@@ -238,6 +286,7 @@ class CreateCommand extends Command<int> {
       _logger.info('${styleBold.wrap('Feature')}       ${config.feature}');
     }
     _logger
+      ..info('${styleBold.wrap('State mgmt')}     ${config.stateManagement.label}')
       ..info('${styleBold.wrap('Theme')}         ${yn(config.enableTheme)}')
       ..info('${styleBold.wrap('Localization')}  ${yn(config.enableL10n)}')
       ..info('');

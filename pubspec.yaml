@@ -1,6 +1,6 @@
 name: arch_gen
 description: A rich interactive CLI that scaffolds a new Flutter project with a Clean Architecture or MVC folder structure.
-version: 0.2.0
+version: 0.1.0
 repository: https://github.com/zamansheikh/arch_gen
 
 environment:

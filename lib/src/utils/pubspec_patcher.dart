@@ -39,4 +39,22 @@ class PubspecPatcher {
     if (changed) file.writeAsStringSync(content);
     return changed;
   }
+
+  /// Adds `name: constraint` under `dependencies:` (after the Flutter SDK dep)
+  /// if it isn't already present. Returns true if the file was changed.
+  static bool addDependency(String projectPath, String name, String constraint) {
+    final file = File(p.join(projectPath, 'pubspec.yaml'));
+    if (!file.existsSync()) return false;
+
+    var content = file.readAsStringSync();
+    if (RegExp('^\\s+$name:', multiLine: true).hasMatch(content)) return false;
+
+    final anchor = RegExp(r'dependencies:\s*\r?\n\s+flutter:\s*\r?\n\s+sdk:\s*flutter');
+    final match = anchor.firstMatch(content);
+    if (match == null) return false;
+
+    content = content.replaceRange(match.end, match.end, '\n  $name: $constraint');
+    file.writeAsStringSync(content);
+    return true;
+  }
 }

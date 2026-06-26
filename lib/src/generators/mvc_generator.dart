@@ -1,10 +1,20 @@
 import '../models/project_config.dart';
 import '../utils/scaffold.dart';
 import '../utils/templates.dart';
+import 'state_management_generator.dart';
 
 /// Builds a classic MVC scaffold: models / views / controllers + helpers.
 class MvcGenerator {
   ScaffoldPlan build(ProjectConfig config) {
+    // The home view + its state holder are driven by the chosen state manager.
+    // State files live in lib/controllers (the MVC-natural place).
+    final presentation = buildStatePresentation(
+      sm: config.stateManagement,
+      pageClassName: 'HomeView',
+      pageTitle: 'Home',
+      importPrefix: '../../controllers/',
+    );
+
     final directories = <String>[
       'lib/models',
       'lib/views/home',
@@ -56,80 +66,9 @@ class ApiService {
   }
 }
 ''',
-      'lib/controllers/home_controller.dart': '''
-import 'package:flutter/foundation.dart';
-
-import '../models/item_model.dart';
-import '../services/api_service.dart';
-
-/// Mediates between the view and the model/service layer.
-class HomeController extends ChangeNotifier {
-  HomeController({ApiService? api}) : _api = api ?? ApiService();
-
-  final ApiService _api;
-
-  bool _loading = false;
-  bool get loading => _loading;
-
-  List<ItemModel> _items = const [];
-  List<ItemModel> get items => _items;
-
-  Future<void> load() async {
-    _loading = true;
-    notifyListeners();
-    _items = await _api.fetchItems();
-    _loading = false;
-    notifyListeners();
-  }
-}
-''',
-      'lib/views/home/home_view.dart': '''
-import 'package:flutter/material.dart';
-
-import '../../controllers/home_controller.dart';
-
-class HomeView extends StatefulWidget {
-  const HomeView({super.key});
-
-  @override
-  State<HomeView> createState() => _HomeViewState();
-}
-
-class _HomeViewState extends State<HomeView> {
-  final HomeController _controller = HomeController();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.addListener(_onChange);
-    _controller.load();
-  }
-
-  void _onChange() => setState(() {});
-
-  @override
-  void dispose() {
-    _controller.removeListener(_onChange);
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
-      body: _controller.loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                for (final item in _controller.items)
-                  ListTile(title: Text(item.title)),
-              ],
-            ),
-    );
-  }
-}
-''',
+      'lib/views/home/home_view.dart': presentation.pageContent,
+      for (final entry in presentation.stateFiles.entries)
+        'lib/controllers/${entry.key}': entry.value,
       'lib/routes/app_routes.dart': '''
 import 'package:flutter/material.dart';
 
@@ -152,8 +91,17 @@ class AppRoutes {
         themeImport: 'theme/app_theme.dart',
         initialRouteExpr: 'AppRoutes.home',
         routesMapExpr: 'AppRoutes.routes',
+        appWidget: presentation.appWidget,
+        extraPackageImports: presentation.mainExtraImports,
+        runAppWrapOpen: presentation.runAppWrapOpen,
+        runAppWrapClose: presentation.runAppWrapClose,
       ),
-      'test/widget_test.dart': buildWidgetTest(config),
+      'test/widget_test.dart': buildWidgetTest(
+        config,
+        extraPackageImports: presentation.testImports,
+        wrapOpen: presentation.runAppWrapOpen,
+        wrapClose: presentation.runAppWrapClose,
+      ),
       if (config.enableTheme) 'lib/theme/app_theme.dart': buildAppTheme(),
       if (config.enableL10n) ...buildL10nFiles(config),
     };

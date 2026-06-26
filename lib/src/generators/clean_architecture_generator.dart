@@ -1,12 +1,24 @@
 import '../models/project_config.dart';
 import '../utils/scaffold.dart';
 import '../utils/templates.dart';
+import 'state_management_generator.dart';
 
 /// Builds a Clean Architecture scaffold (feature-first with a shared core).
 class CleanArchitectureGenerator {
   ScaffoldPlan build(ProjectConfig config) {
     final f = config.feature.toLowerCase();
     final pascal = _pascal(f);
+    final sm = config.stateManagement;
+
+    // Presentation layer is driven by the chosen state manager. The page lives
+    // in presentation/pages and state files in presentation/<stateFolder>.
+    final stateFolder = sm.stateFolder.isEmpty ? 'controllers' : sm.stateFolder;
+    final presentation = buildStatePresentation(
+      sm: sm,
+      pageClassName: '${pascal}Page',
+      pageTitle: pascal,
+      importPrefix: '../$stateFolder/',
+    );
 
     final directories = <String>[
       'lib/core/constants',
@@ -23,7 +35,7 @@ class CleanArchitectureGenerator {
       'lib/features/$f/domain/entities',
       'lib/features/$f/domain/repositories',
       'lib/features/$f/domain/usecases',
-      'lib/features/$f/presentation/controllers',
+      'lib/features/$f/presentation/$stateFolder',
       'lib/features/$f/presentation/pages',
       'lib/features/$f/presentation/widgets',
       'test',
@@ -162,49 +174,10 @@ class ${pascal}RemoteDataSourceImpl implements ${pascal}RemoteDataSource {
   }
 }
 ''',
-      'lib/features/$f/presentation/controllers/${f}_controller.dart': '''
-import 'package:flutter/foundation.dart';
-
-import '../../../../core/usecases/usecase.dart';
-import '../../domain/entities/${f}_entity.dart';
-import '../../domain/usecases/get_${f}_items.dart';
-
-/// Simple ChangeNotifier controller. Swap for Bloc/Riverpod if you prefer.
-class ${pascal}Controller extends ChangeNotifier {
-  ${pascal}Controller(this._getItems);
-
-  final Get${pascal}Items _getItems;
-
-  bool _loading = false;
-  bool get loading => _loading;
-
-  List<${pascal}Entity> _items = const [];
-  List<${pascal}Entity> get items => _items;
-
-  Future<void> load() async {
-    _loading = true;
-    notifyListeners();
-    _items = await _getItems(const NoParams());
-    _loading = false;
-    notifyListeners();
-  }
-}
-''',
-      'lib/features/$f/presentation/pages/${f}_page.dart': '''
-import 'package:flutter/material.dart';
-
-class ${pascal}Page extends StatelessWidget {
-  const ${pascal}Page({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('$pascal')),
-      body: const Center(child: Text('Welcome to your Clean Architecture app')),
-    );
-  }
-}
-''',
+      'lib/features/$f/presentation/pages/${f}_page.dart':
+          presentation.pageContent,
+      for (final entry in presentation.stateFiles.entries)
+        'lib/features/$f/presentation/$stateFolder/${entry.key}': entry.value,
       'lib/main.dart': buildMainDart(
         config: config,
         routesImport: 'config/routes/app_routes.dart',
@@ -212,8 +185,17 @@ class ${pascal}Page extends StatelessWidget {
         themeImport: 'config/theme/app_theme.dart',
         initialRouteExpr: 'AppRoutes.home',
         routesMapExpr: 'AppRoutes.routes',
+        appWidget: presentation.appWidget,
+        extraPackageImports: presentation.mainExtraImports,
+        runAppWrapOpen: presentation.runAppWrapOpen,
+        runAppWrapClose: presentation.runAppWrapClose,
       ),
-      'test/widget_test.dart': buildWidgetTest(config),
+      'test/widget_test.dart': buildWidgetTest(
+        config,
+        extraPackageImports: presentation.testImports,
+        wrapOpen: presentation.runAppWrapOpen,
+        wrapClose: presentation.runAppWrapClose,
+      ),
       if (config.enableTheme) 'lib/config/theme/app_theme.dart': buildAppTheme(),
       if (config.enableL10n) ...buildL10nFiles(config),
     };
