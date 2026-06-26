@@ -276,32 +276,44 @@ class CreateCommand extends Command<int> {
   }
 
   void _printSummary(ProjectConfig config) {
-    String yn(bool v) => v ? lightGreen.wrap('yes')! : darkGray.wrap('no')!;
+    final bar = lightCyan.wrap('│')!;
+    String yn(bool v) =>
+        v ? lightGreen.wrap('● yes')! : darkGray.wrap('○ no')!;
+    String row(String k, String v) => '  $bar  ${k.padRight(14)}$v';
+
     _logger
       ..info('')
-      ..info('${styleBold.wrap('Project')}       ${config.projectName}')
-      ..info('${styleBold.wrap('Package id')}    ${config.packageId}')
-      ..info('${styleBold.wrap('Architecture')}  ${config.architecture.label}');
+      ..info('  ${lightCyan.wrap('╭─')} ${styleBold.wrap('Configuration')}')
+      ..info(row('Project', config.projectName))
+      ..info(row('Package id', lightYellow.wrap(config.packageId)!))
+      ..info(row('Architecture', config.architecture.label));
     if (config.architecture == Architecture.clean) {
-      _logger.info('${styleBold.wrap('Feature')}       ${config.feature}');
+      _logger.info(row('Feature', config.feature));
     }
     _logger
-      ..info('${styleBold.wrap('State mgmt')}     ${config.stateManagement.label}')
-      ..info('${styleBold.wrap('Theme')}         ${yn(config.enableTheme)}')
-      ..info('${styleBold.wrap('Localization')}  ${yn(config.enableL10n)}')
+      ..info(row('State mgmt', config.stateManagement.label))
+      ..info(row('Theme', yn(config.enableTheme)))
+      ..info(row('Localization', yn(config.enableL10n)))
+      ..info('  ${lightCyan.wrap('╰─')}')
       ..info('');
   }
 
   void _printNextSteps(ProjectConfig config, {required bool skipPubGet}) {
+    final bar = lightGreen.wrap('│')!;
     _logger
       ..info('')
-      ..success('✓ ${config.architecture.label} project '
+      ..success('  ✓ ${config.architecture.label} project '
           '"${config.projectName}" is ready!')
       ..info('')
-      ..info(styleBold.wrap('Next steps:')!)
-      ..info('  cd ${config.projectName}');
-    if (!skipPubGet) _logger.info('  flutter pub get');
-    _logger.info('  flutter run');
+      ..info('  ${lightGreen.wrap('╭─')} ${styleBold.wrap('Next steps')}')
+      ..info('  $bar  cd ${config.projectName}');
+    if (!skipPubGet) _logger.info('  $bar  flutter pub get');
+    _logger
+      ..info('  $bar  flutter run')
+      ..info('  ${lightGreen.wrap('╰─')}')
+      ..info('')
+      ..info(darkGray.wrap('  Enjoying arch_gen? Support development: '
+          'https://ko-fi.com/zamansheikh')!);
   }
 
   /// Returns an error message if [name] is not a valid Dart package name.

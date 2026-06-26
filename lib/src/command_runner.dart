@@ -41,7 +41,7 @@ class ArchGenCommandRunner extends CommandRunner<int> {
       }
 
       if (topLevel.command?.name == 'create') {
-        printBanner(_logger);
+        printBanner(_logger, version: _version);
       }
       return await runCommand(topLevel) ?? ExitCode.success.code;
     } on UsageException catch (e) {
@@ -55,7 +55,7 @@ class ArchGenCommandRunner extends CommandRunner<int> {
 
   /// Arrow-key main menu shown when `arch_gen` is run with no command.
   Future<int> _runInteractiveMenu() async {
-    printBanner(_logger);
+    printBanner(_logger, version: _version);
 
     if (!stdin.hasTerminal) {
       // No interactive TTY (piped/CI). Fall back to printing usage.
