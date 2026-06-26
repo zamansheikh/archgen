@@ -10,7 +10,7 @@
   <a href="https://pub.dev/packages/arch_gen/score"><img src="https://img.shields.io/pub/points/arch_gen?logo=dart&color=brightgreen" alt="pub points"></a>
   <a href="https://pub.dev/packages/arch_gen"><img src="https://img.shields.io/pub/likes/arch_gen?logo=dart" alt="pub likes"></a>
   <img src="https://img.shields.io/badge/platforms-windows%20%7C%20macos%20%7C%20linux-informational" alt="platforms">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="license"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-purple.svg" alt="license"></a>
 </p>
 
 <p align="center">
@@ -229,4 +229,15 @@ GitHub: [@zamansheikh](https://github.com/zamansheikh)
 
 ## 📄 License
 
-Released under the [MIT License](LICENSE). © 2026 Zaman Sheikh.
+Released under the **[Apache License 2.0](LICENSE)**. © 2026 Zaman Sheikh.
+
+You are free to use and build on arch_gen, but the license requires you to:
+
+- **keep attribution** — retain the copyright, license, and [`NOTICE`](NOTICE) notices;
+- **state your changes** — mark any files you modify; and
+- **not rebrand it as your own** — the `arch_gen` name and the author's name may
+  not be used to endorse or promote derived products without written permission
+  (Apache-2.0 §6, Trademarks).
+
+In short: fork it, improve it, ship it — just don't strip the credit or pass it
+off as your own work.
